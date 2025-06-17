@@ -7,7 +7,7 @@ graph TD;
         direction LR;
 
         %% =============== CONTRACT =================
-        subgraph "1. Contract  (Rust)"
+        subgraph "(1) Contract  (Rust)"
             direction TB;
 
             %% ---- Source tree ----
@@ -46,7 +46,7 @@ graph TD;
         end
 
         %% =============== UPLOADER =================
-        subgraph "2. Uploader  (Node.js + TypeScript)"
+        subgraph "(2) Uploader  (Node.js + TypeScript)"
             direction TB;
 
             %% Core scripts
@@ -61,7 +61,7 @@ graph TD;
             %% Config & build
             uploader_pkg_json["package.json"];
             uploader_tsconfig["tsconfig.json"];
-            uploader_env[".env  (wallet mnemonic, IDs)"];
+            uploader_env[".env  (wallet mnemonic)"];
             uploader_contract_file[".contract"];
 
             %% Dependencies
@@ -86,7 +86,7 @@ graph TD;
         end
 
         %% =============== FRONTEND =================
-        subgraph "3. Frontend  (React + Vite)"
+        subgraph "(3) Frontend  (React + Vite)"
             direction TB;
 
             %% Entry
@@ -149,13 +149,10 @@ graph TD;
     %% ---------------------------------------------
     %% Data Flow across workspaces
     %% ---------------------------------------------
-    optimized_wasm -- "① upload.ts reads WASM" --> upload_ts;
-    upload_ts -- "② Stores Code ID on" --> secret_network;
-    inst_only_ts -- "③ Instantiates contract" --> secret_network;
-    inst_and_test_ts -- "④ E2E tests against" --> secret_network;
+    optimized_wasm -- "① upload.ts uploads WASM" --> secret_network;
+    upload_ts -- "② Prints Code ID & Hash (manual copy)" --> frontend_env;
+    inst_and_test_ts -- "③ Instantiates contract & tests" --> secret_network;
+    inst_only_ts -- "④ Prints contract address (manual copy)" --> frontend_env;
 
-    inst_and_test_ts -- "⑤ Writes address to" --> uploader_contract_file;
-    uploader_contract_file -- "⑥ Copied into" --> frontend_env;
-
-    secret_context -- "⑦ Interacts via secretjs with" --> secret_network;
+    secret_context -- "⑤ UI interacts via secretjs with" --> secret_network;
 ```

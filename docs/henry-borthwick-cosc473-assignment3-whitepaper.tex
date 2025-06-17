@@ -6,6 +6,8 @@
 \usepackage{hyperref}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{ifthen}
 
 % Whitepaper Title & Abstract
 \title{Secret Raffle: A Privacy-Preserving Lottery dApp on Secret Network}
@@ -21,15 +23,13 @@ Public blockchain raffles typically expose every ticket purchase and rely on off
 A React/TypeScript front-end built with Vite and SecretJS abstracts wallet connection, ticket purchase, and results display into three intuitive clicks.  End-to-end tests executed on pulsar-3 testnet demonstrate a \textless200 kGas ticket purchase, \textless300 kGas winner selection, and successful prize payouts for up to \(10^{6}\) tickets without overflow.  These results validate that privacy-preserving raffles can be delivered with minimal contract complexity while retaining familiar user-experience patterns.  The project serves as a blueprint for more sophisticated, fair-chance games and fund-raising mechanisms in the Cosmos ecosystem.
 \end{abstract}
 
-% The remainder of the whitepaper continues below ...
-
 \section*{Problem Statement \& Motivation}
 
 \subsection*{Centralised Raffles: A Broken Trust Model}
-Traditional online raffles --- whether used for charity fund-raising, community giveaways, or customer engagement campaigns --- are almost always operated by a central authority who (1) collects entry fees, (2) draws a winner off-chain, and (3) promises to distribute the prize.  Participants must blindly trust that the organiser will not tamper with the draw, exclude entries, or walk away with the pot.  Even projects that migrate ticket sales on-chain (e.g. a0Ethereum ERC-20 based lotteries) still expose a major weakness: every purchase is publicly traceable, so whales can copy trade large entries, and winner selection typically relies on external random-number services or opaque scripts.
+Traditional online raffles --- whether used for charity fund-raising, community giveaways, or customer engagement campaigns --- are almost always operated by a central authority who (1) collects entry fees, (2) draws a winner off-chain, and (3) promises to distribute the prize.  Participants must blindly trust that the organiser will not tamper with the draw, exclude entries, or walk away with the pot.  Even projects that migrate ticket sales on-chain (e.g. Ethereum ERC-20 based lotteries) still expose a major weakness: every purchase is publicly traceable, so whales can copy trade large entries, and winner selection typically relies on external random-number services or opaque scripts.
 
 \subsection*{The Need for Verifiable \emph{and} Private Lotteries}
-Communities and creators increasingly want ways to raise funds or distribute rewards in a manner that is both provably fair \emph{and} respectful of participants' privacy.  A transparent contract is essential for auditability, yet publishing every wallet's ticket balance can deter users who prefer to keep spending habits or donation sizes confidential.  Likewise, sourcing randomness a0must not introduce new trust assumptions or central points of failure.
+Communities and creators increasingly want ways to raise funds or distribute rewards in a manner that is both provably fair \emph{and} respectful of participants' privacy.  A transparent contract is essential for auditability, yet publishing every wallet's ticket balance can deter users who prefer to keep spending habits or donation sizes confidential.  Likewise, sourcing randomness must not introduce new trust assumptions or central points of failure.
 
 \subsection*{Why Secret Network + CosmWasm?}
 Secret Network brings encrypted contract state and compute to the Cosmos ecosystem.  By storing ticket counts and the raffle's secret phrase inside the Trusted Execution Environment (TEE), our \emph{Secret Raffle} contract simultaneously delivers:
@@ -42,5 +42,87 @@ Secret Network brings encrypted contract state and compute to the Cosmos ecosyst
 \end{itemize}
 
 These properties address both fairness and privacy gaps in existing lottery implementations, providing a robust fund-raising primitive that communities can trust without sacrificing anonymity.
+
+\section*{Related Work \& Context}
+
+\subsection*{Public On-Chain Lotteries}
+\textbf{PoolTogether (Ethereum):} a ``no-loss'' lottery that pools user deposits into interest-bearing protocols and periodically awards the accrued yield to winners.  While provably fair thanks to open smart contracts, every deposit and withdrawal is permanently visible on Etherscan, and randomness derives from Chainlink VRF --- a trusted, fee-charging oracle service.\footnote{\url{https://www.pooltogether.com/}}
+
+\textbf{PancakeSwap Lottery (BNB Smart Chain):} tickets are purchased with CAKE tokens and a winner is chosen each day using an on-chain entropy source seeded by block hashes.  The system is transparent but leaks ticket counts per wallet, allowing behaviour analysis and ``snipe'' strategies by large holders.\footnote{\url{https://docs.pancakeswap.finance/products/lottery}}
+
+\textbf{JunoLottery (Cosmos/Juno):} an open-source CosmWasm contract that implements a simple raffle on the Juno network.  It inherits the same privacy limitations as other public-state chains and relies on an external web app to pick winners.\footnote{\url{https://github.com/CosmosContracts/juno-lottery}}
+
+\subsection*{Privacy-Focused Blockchain Games}
+\textbf{SecretScratchCard (Secret Network example dApp):} demonstrates private ownership of scratch-card NFTs; however, randomness is imported via the off-chain tx sender rather than derived from enclave entropy, and it does not escrow communal funds.\footnote{\url{https://github.com/scrtlabs/SecretScratchcard}}
+
+\textbf{Shade Protocol's ``Silk Raffle'':} a promotional contract that granted lottery tickets to users who staked the SILK stablecoin.  Winner selection occurred in a trusted script run by the Shade team, limiting verifiability.
+
+\subsection*{Gap Our Design Fills}
+Existing lottery solutions force users to choose between \emph{transparency} (public ledgers, third-party randomness) and \emph{privacy} (off-chain or custodial raffles).  \emph{Secret Raffle} uniquely combines:
+\begin{itemize}
+  \item \emph{Encrypted state} so ticket balances remain confidential even while stored on the blockchain.
+  \item \emph{Enclave-derived randomness} that removes reliance on oracles.
+  \item \emph{Self-contained winner selection and payout} inside one CosmWasm contract, eliminating trusted scripts.
+  \item \emph{Standardised permit queries} that let winners privately reveal a bonus secret phrase without exposing it chain-wide.
+\end{itemize}
+To our knowledge no open-source lottery in the Cosmos ecosystem offers this privacy + verifiability blend, positioning Secret Raffle as a reference implementation for future fair-chance games and fund-raising campaigns.
+
+\section*{Architecture \& Contract Design}
+
+\subsection*{High-Level Components}
+\begin{figure}[h]
+  \centering
+  \IfFileExists{raffle-architecture.png}{%
+    \includegraphics[width=0.85\textwidth]{raffle-architecture.png}%
+  }{%
+    \fbox{\parbox[c][5cm][c]{0.8\textwidth}{\centering Architecture diagram placeholder}}%
+  }
+  \caption{System overview showing interactions between user wallets, the React front-end, and the Secret Raffle contract running inside Secret Network's TEE.}
+\end{figure}
+
+The dApp is split into three loosely-coupled packages contained in the monorepo:
+\begin{enumerate}
+  \item \textbf{Contract (Rust, CosmWasm):} implements all raffle logic, funds escrow, randomness, and permit-guarded secret queries.
+  \item \textbf{Uploader (Node.js):} CLI scripts for \verb|wasm| upload, instantiation, and automated integration tests on \texttt{pulsar-3}.
+  \item \textbf{Frontend (React/TypeScript):} provides a Keplr-enabled UI that calls the contract through SecretJS hooks.
+\end{enumerate}
+
+\subsection*{ExecuteMsg / QueryMsg API}
+\paragraph{ExecuteMsg}
+\begin{tabular}{@{}lp{9cm}@{}}
+  \textbf{set\_raffle} & Admin-only. Stores \verb|ticket_price|, \verb|end_time|, and \verb|secret| phrase. \\ \addlinespace[0.1em]
+  \textbf{start\_raffle} & Marks raffle as open; enables ticket purchases. \\ \addlinespace[0.1em]
+  \textbf{buy\_ticket} & Public. Accepts \verb|uSCRT|; mints 1 ticket per \verb|ticket_price| units. \\ \addlinespace[0.1em]
+  \textbf{select\_winner} & Callable after \verb|end_time|. Draws a winner proportional to tickets held. \\ \addlinespace[0.1em]
+  \textbf{claim\_prize} & Winner retrieves the entire pot and unlocks secret viewing rights. \\ \addlinespace[0.2em]
+\end{tabular}
+
+\paragraph{QueryMsg}
+\begin{itemize}
+  \item \verb|raffle_info| – Public: returns started flag, ticket price, end time, totals, winner status.
+  \item \verb|with_permit| – Private: wrapper that authenticates the caller via Secret Network \emph{permit} and dispatches to either \verb|get_secret| or \verb|get_tickets|.
+\end{itemize}
+
+\subsection*{State Layout}
+All persistent data lives in prefixed singleton or map stores:
+\begin{itemize}
+  \item \textbf{ADMIN (singleton)} – Canonical addr of contract admin.
+  \item \textbf{RAFFLE (singleton)} – Struct \{\verb|ticket_price|, \verb|end_time|, \verb|secret|\}.
+  \item \textbf{TICKETS (map)} – \verb|CanonicalAddr \rightarrow u64| per-user ticket count.
+  \item \textbf{TOTAL\_TICKETS (singleton)} – Aggregate ticket supply (\verb|u64|).
+  \item \textbf{WINNER (singleton)} – Optional winner address once selected.
+  \item \textbf{Boolean flags} – \verb|RAFFLE_STARTED|, \verb|WINNER_SELECTED|, \verb|PRIZE_CLAIMED|.
+\end{itemize}
+
+\subsection*{Security Considerations}
+\begin{description}
+  \item[Access Control] \verb|ADMIN| is validated for configuration messages; the front-end further hides those buttons from non-admins.
+  \item[Replay/Overflow] Ticket math uses checked addition; \verb|u64| caps are enforced to prevent overflow even for whales.
+  \item[Randomness Bias] Raffle uses the first 8 bytes of \texttt{env.block.random}; modulo bias is acceptable for demo-scale raffles.  In production this would be replaced by the Secret Randomness API.
+  \item[Privacy] Secret state hides individual ticket balances; viewing requires an owner permit ensuring only the wallet holder can query.  No personal data leaves the enclave.
+  \item[Upgrades] Adding future features (e.g. refunds) can be done via migration without altering existing key serialization thanks to additive flag design.
+\end{description}
+
+This architecture keeps the trusted computing base minimal (single contract) while leveraging Secret Network's unique encrypted compute to satisfy both fairness and privacy goals.
 
 \end{document}
