@@ -1,0 +1,31 @@
+# Ignore all LaTeX auxiliary & build artefacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
+*.lof
+*.lot
+*.gz
+*.nav
+*.snm
+*.vrb
+*.dvi
+*.ps
+
+# Ignore other temporary/editor files
+*~
+.DS_Store
+
+# --- Exceptions -----------------------------------------------------------
+# Keep white-paper sources and final deliverables
+!*.tex
+!*.md
+!*.pdf
+
+# Always keep this ignore file itself
+!.gitignore
