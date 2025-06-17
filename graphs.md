@@ -204,3 +204,74 @@ flowchart LR
     %% =============== COLUMN LAYOUT HELPERS ================
     C --- U --- F
 ```
+
+# Secret Raffle Monorepo Frontend Contract Interaction Diagram
+```mermaid
+flowchart LR
+    %% =============== FRONTEND ================
+    subgraph F["Frontend (React + Vite)"]
+        direction TB
+        F_entry["main.tsx"]
+        F_ctx["SecretJsContext.tsx"]
+        F_hook["useRaffle.ts"]
+        F_pages["Pages & Components<br>• AdminPanel • BuyTicket • ClaimPrize • ViewSecret"]
+        F_shared["Shared<br>• CountdownTimer • Toast • LoadingSpinner"]
+        F_entry --> F_ctx --> F_hook --> F_pages
+        F_shared --- F_pages
+    end
+
+    %% =============== NETWORK BRIDGE ================
+    sdk[("SecretJS SDK")]
+    pulsar[["Secret Network<br>(Pulsar Testnet)"]]
+
+    %% =============== CONTRACT ================
+    subgraph C["Smart Contract (CosmWasm + Rust)"]
+        direction TB
+        lib["lib.rs"]
+        contract["contract.rs"]
+        msg["msg.rs"]
+        state["state.rs"]
+        schema["bin/schema.rs"]
+        lib --> contract --> state
+        contract --> msg
+        schema --> lib
+    end
+
+    %% =============== FLOWS ================
+    F_hook -- "exec / query msgs" --> sdk --> pulsar --> msg
+    msg -. invokes .-> contract
+    contract --> state
+    state --> contract
+    contract --> pulsar
+```
+
+# Secret Raffle Monorepo Contract Message Schema Diagram
+
+| Type | Variant | Fields | Access |
+|------|---------|--------|--------|
+| **InstantiateMsg** |  | `admin: Option<Addr>` | Deployer |
+| **ExecuteMsg** | `set_raffle` | `secret`, `ticket_price`, `end_time` | **Admin** |
+| | `start_raffle` | – | **Admin** |
+| | `buy_ticket` | – | Any user – must attach `uSCRT` multiple of `ticket_price` |
+| | `select_winner` | – | **Admin** (after `end_time`) |
+| | `claim_prize` | – | Winner only |
+| **QueryMsg** | `raffle_info` | – | Public |
+| | `with_permit` → `get_secret` | `Permit` | Winner only (via permit) |
+| | `with_permit` → `get_tickets` | `Permit` | Ticket owner (via permit) |
+
+*Permit requirement*: the client must include the `owner` permission when generating the permit; otherwise the contract rejects the query.
+
+# Secret Raffle Monorepo Contract State Layout Diagram
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `ADMIN` | `Item<CanonicalAddr>` | Contract owner / admin |
+| `RAFFLE_STARTED` | `Item<bool>` | Ticket sales open flag |
+| `PRIZE_CLAIMED` | `Item<bool>` | Prevents double-spend of pot |
+| `RAFFLE` | `Item<Raffle>` | Config (`end_time`, `ticket_price`, `secret`) |
+| `WINNER_SELECTED` | `Item<bool>` | Marks winner determination complete |
+| `WINNER` | `Item<Option<CanonicalAddr>>` | Winning address (if any) |
+| `TOTAL_TICKETS` | `Item<u64>` | Global ticket counter |
+| `TICKETS` | `Keymap<CanonicalAddr, u64>` | Per-user ticket balances |
+
+Design note: all addresses are stored in canonical (binary) form to avoid Bech32-casing duplicates.
