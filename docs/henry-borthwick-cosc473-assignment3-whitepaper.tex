@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{ifthen}
+\usepackage{tabularx}
 
 % ---------------------------------------------------------------------------
 % Title
@@ -50,112 +51,17 @@ Blockchain lotteries aim to offer fair and transparent prize distribution, but e
 \section{Architecture \& Contract Design}
 
 \subsection{Architecture}
-Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram Appendix} shows the frontend-contract interaction architecture structure diagram for the dApp.
+Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram Appendix} shows the frontend-contract modules interaction architecture structure diagram for the secret raffle dApp. It shows the direction of interaction flow, highlighting module boundaries and hand off points between off chain and on chain logic between the React UI, CosmWasm contract and Secret Testnet.
 
 \subsection{Contract Design}
 
-Tables \ref{tab:ExecuteMsg Schema}, \ref{tab:QueryMsg Schema}, and \ref{tab:State Layout} define the contract's external interface and its private state. Table~\ref{tab:ExecuteMsg Schema} lists the \emph{ExecuteMsg} variants, the transaction messages that mutate state with required parameters, who is authorised to send them, and what they do. Table~\ref{tab:QueryMsg Schema} describes the read only \emph{QueryMsg} variants, showing data retrieved either publicly or with a permit. The final table, \ref{tab:State Layout}, itemises every persistent storage key inside the enclave.
-
-% ExecuteMsg Schema table
-\begin{table}[h]
-  \centering
-  \caption{ExecuteMsg Schema}
-  \label{tab:ExecuteMsg Schema}
-  \begin{tabular}{@{}llll@{}}
-    \toprule
-    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
-    \midrule
-    \texttt{set\_raffle} & \texttt{ticket\_price}, \texttt{end\_time}, \texttt{secret} & Admin & Configure raffle parameters. \\
-    \midrule
-    \texttt{start\_raffle} & -- & Admin & Open raffle for ticket purchases. \\
-    \midrule
-    \texttt{buy\_ticket} & (requires attached \texttt{uSCRT}) & Public & Purchase one or more tickets. \\
-    \midrule
-    \texttt{select\_winner} & -- & Admin & Pick winner after \texttt{end\_time}. \\
-    \midrule
-    \texttt{claim\_prize} & -- & Winner & Claim the pot and reveal secret. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% QueryMsg Schema table
-\begin{table}[h]
-  \centering
-  \caption{QueryMsg Schema}
-  \label{tab:QueryMsg Schema}
-  \begin{tabular}{@{}llll@{}}
-    \toprule
-    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
-    \midrule
-    \texttt{raffle\_info} & -- & Public & Raffle summary \\
-    \midrule
-    \texttt{with\_permit} $\rightarrow$ \texttt{get\_secret} & \texttt{Permit} & Winner & Reveal secret phrase \\
-    \midrule
-    \texttt{with\_permit} $\rightarrow$ \texttt{get\_tickets} & \texttt{Permit} & Ticket holder & View own ticket count \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% State Layout table
-\begin{table}[h]
-  \centering
-  \caption{State Layout}
-  \label{tab:State Layout}
-  \begin{tabular}{@{}lll@{}}
-    \toprule
-    \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
-    \midrule
-    \texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
-    \texttt{RAFFLE} & \texttt{Item<Raffle>} & Config: end time, price, secret \\
-    \texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
-    \texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
-    \texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
-    \texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
-    \texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
-    \texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
-    \bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-  \centering
-  \caption{Security Considerations}
-  \begin{tabular}{@{}lp{10cm}@{}}
-    \toprule
-    \textbf{Aspect} & \textbf{Design Notes} \\
-    \midrule
-    Access Control & Admin-only actions restricted; UI conceals options for non-admins. \\
-    Edge Cases & Zero-ticket scenarios handled without errors. \\
-    Randomness & Block entropy used for demo; upgradable to Secret Randomness API. \\
-    Privacy & Encrypted state with permit-only access. \\
-    Upgradability & State design supports future enhancements without breaking changes. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{table}[h]
-  \centering
-  \caption{Special Features}
-  \begin{tabular}{@{}lp{10cm}@{}}
-    \toprule
-    \textbf{Feature} & \textbf{Description} \\
-    \midrule
-    Encrypted State & Ticket counts and the hidden secret phrase are stored inside the enclave, never appearing on the public ledger. \\
-    \midrule
-    On-chain Randomness (Stretch Goal) & Winner selection draws entropy from the encrypted block seed, showcasing a fully on-chain random draw without external VRF services. \\
-    \midrule
-    Timelock Pattern (Stretch Goal) & Privileged actions such as \texttt{select\_winner} are gated by an \texttt{end\_time} timestamp. \\
-    \midrule
-    Other Smart Contract Dev Feature (Stretch Goal) & Permit-Based Queries access to private data requires a wallet-signed \texttt{Permit}, ensuring only authorised users can view their tickets or the secret. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+Tables \ref{tab:ExecuteMsg Schema}, \ref{tab:QueryMsg Schema}, and \ref{tab:State Layout} define the contract's external interface and its private state. Table~\ref{tab:ExecuteMsg Schema} lists the \emph{ExecuteMsg} variants, the transaction messages that mutate state with required parameters, who is authorised to send them, and what they do. Table~\ref{tab:QueryMsg Schema} describes the read only \emph{QueryMsg} variants, showing data retrieved either publicly or with a permit. The final table, \ref{tab:State Layout}, itemises every persistent storage key inside the enclave. Table \ref{tab:Security Considerations} identifies the security features implemented for the application to prevent unauthorised access, pathological edge cases, randomness manipulation, and privacy leakage. Table \ref{tab:Special Features} shows the features enabled by Secret Network's private compute encrypted state, permit gated queries, and upgrade hooks such as the time-lock pattern.
 
 % ---------------------------------------------------------------------------
 % Frontend Workflow & UX 1/4 page
 % ---------------------------------------------------------------------------
 \section{Frontend Workflow \& UX}
-The user and admin frontend interaction workflow and user experience is represented using a flow diagrami n Figure \ref{fig:Frontend Workflow Appendix}.
+The user and admin frontend interaction workflow and user experience is represented using a flow diagram in Figure \ref{fig:Frontend Workflow Appendix} showing the touch points of a user, admin and prize winner through the entire raffle process from raffle configuration to prize redemption. The figure also double as a UX contract showing what is exposed at each state.
 
 % ---------------------------------------------------------------------------
 % Implementation Choices & Tradeoffs 1/4 page
@@ -247,6 +153,111 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
   \caption{Frontend Workflow.}
   \label{fig:Frontend Workflow Appendix}
 \end{figure}
+
+\newpage
+
+% ExecuteMsg Schema table
+\begin{table}[h]
+  \centering
+  \caption{ExecuteMsg Schema}
+  \label{tab:ExecuteMsg Schema}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
+    \midrule
+    \texttt{set\_raffle} & \texttt{ticket\_price}, \texttt{end\_time}, \texttt{secret} & Admin & Configure raffle parameters. \\
+    \midrule
+    \texttt{start\_raffle} & -- & Admin & Open raffle for ticket purchases. \\
+    \midrule
+    \texttt{buy\_ticket} & (requires attached \texttt{uSCRT}) & Public & Purchase one or more tickets. \\
+    \midrule
+    \texttt{select\_winner} & -- & Admin & Pick winner after \texttt{end\_time}. \\
+    \midrule
+    \texttt{claim\_prize} & -- & Winner & Claim the pot and reveal secret. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% QueryMsg Schema table
+\begin{table}[h]
+  \centering
+  \caption{QueryMsg Schema}
+  \label{tab:QueryMsg Schema}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
+    \midrule
+    \texttt{raffle\_info} & -- & Public & Raffle summary \\
+    \midrule
+    \texttt{with\_permit} $\rightarrow$ \texttt{get\_secret} & \texttt{Permit} & Winner & Reveal secret phrase \\
+    \midrule
+    \texttt{with\_permit} $\rightarrow$ \texttt{get\_tickets} & \texttt{Permit} & Ticket holder & View own ticket count \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% State Layout table
+\begin{table}[h]
+  \centering
+  \caption{State Layout}
+  \label{tab:State Layout}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
+    \midrule
+    \texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
+    \texttt{RAFFLE} & \texttt{Item<Rfle>} & Config: end time, price, secret \\
+    \texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
+    \texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
+    \texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
+    \texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
+    \texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
+    \texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
+    \bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+% Security Considerations table
+\begin{table}[h]
+  \centering
+  \caption{Security Considerations}
+  \label{tab:Security Considerations}
+  \begin{tabular}{@{}lp{10cm}@{}}
+    \toprule
+    \textbf{Aspect} & \textbf{Design Notes} \\
+    \midrule
+    Access Control & Admin-only actions restricted; UI conceals options for non-admins. \\
+    \midrule
+    Edge Cases & Zero-ticket scenarios handled without errors. \\
+    \midrule
+    Randomness & Block entropy used for demo; upgradable to Secret Randomness API. \\
+    \midrule
+    Privacy & Encrypted state with permit-only access. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% Special Features table
+\begin{table}[h]
+  \centering
+  \caption{Special Features}
+  \label{tab:Special Features}
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    \textbf{Feature} & \textbf{Description} \\
+    \midrule
+    Encrypted State & Ticket counts and the hidden secret phrase are stored inside the enclave, never appearing on the public ledger. \\
+    \midrule
+    On-chain Randomness (Stretch Goal) & Winner selection draws entropy from the encrypted block seed, showcasing a fully on-chain random draw without external VRF services. \\
+    \midrule
+    Timelock Pattern (Stretch Goal) & Privileged actions such as \texttt{select\_winner} are gated by an \texttt{end\_time} timestamp. \\
+    \midrule
+    Other Smart Contract Dev Feature (Stretch Goal) & Permit-Based Queries access to private data requires a wallet-signed \texttt{Permit}, ensuring only authorised users can view their tickets or the secret. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 \newpage
 
