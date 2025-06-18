@@ -54,23 +54,26 @@ Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram App
 
 \subsection{Contract Design}
 
+Tables \ref{tab:ExecuteMsg Schema}, \ref{tab:QueryMsg Schema}, and \ref{tab:State Layout} define the contract's external interface and its private state. Table~\ref{tab:ExecuteMsg Schema} lists the \emph{ExecuteMsg} variants, the transaction messages that mutate state with required parameters, who is authorised to send them, and what they do. Table~\ref{tab:QueryMsg Schema} describes the read only \emph{QueryMsg} variants, showing data retrieved either publicly or with a permit. The final table, \ref{tab:State Layout}, itemises every persistent storage key inside the enclave.
+
 % ExecuteMsg Schema table
 \begin{table}[h]
   \centering
   \caption{ExecuteMsg Schema}
-  \begin{tabular}{@{}lp{9cm}@{}}
+  \label{tab:ExecuteMsg Schema}
+  \begin{tabular}{@{}llll@{}}
     \toprule
-    \textbf{Message} & \textbf{Description} \\
+    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
     \midrule
-    \texttt{set\_raffle} & Admin-only. Sets \texttt{ticket\_price}, \texttt{end\_time}, and \texttt{secret} phrase. \\
+    \texttt{set\_raffle} & \texttt{ticket\_price}, \texttt{end\_time}, \texttt{secret} & Admin & Configure raffle parameters. \\
     \midrule
-    \texttt{start\_raffle} & Opens raffle for ticket purchases. \\
+    \texttt{start\_raffle} & -- & Admin & Open raffle for ticket purchases. \\
     \midrule
-    \texttt{buy\_ticket} & Public. Accepts \texttt{uSCRT}; mints tickets per \texttt{ticket\_price}. \\
+    \texttt{buy\_ticket} & (requires attached \texttt{uSCRT}) & Public & Purchase one or more tickets. \\
     \midrule
-    \texttt{select\_winner} & Callable post-\texttt{end\_time}. Picks winner based on ticket holdings. \\
+    \texttt{select\_winner} & -- & Admin & Pick winner after \texttt{end\_time}. \\
     \midrule
-    \texttt{claim\_prize} & Winner claims pot and unlocks secret viewing. \\
+    \texttt{claim\_prize} & -- & Winner & Claim the pot and reveal secret. \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -79,10 +82,11 @@ Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram App
 \begin{table}[h]
   \centering
   \caption{QueryMsg Schema}
+  \label{tab:QueryMsg Schema}
   \begin{tabular}{@{}llll@{}}
     \toprule
     \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
-    % \midrule
+    \midrule
     \texttt{raffle\_info} & -- & Public & Raffle summary \\
     \midrule
     \texttt{with\_permit} $\rightarrow$ \texttt{get\_secret} & \texttt{Permit} & Winner & Reveal secret phrase \\
@@ -96,6 +100,7 @@ Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram App
 \begin{table}[h]
   \centering
   \caption{State Layout}
+  \label{tab:State Layout}
   \begin{tabular}{@{}lll@{}}
     \toprule
     \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
