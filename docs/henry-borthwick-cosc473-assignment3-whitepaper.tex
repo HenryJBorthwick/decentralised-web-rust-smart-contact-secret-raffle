@@ -11,9 +11,8 @@
 % ---------------------------------------------------------------------------
 % Title
 % ---------------------------------------------------------------------------
-\title{Secret Raffle: A Privacy-Preserving Lottery dApp on Secret Network}
-\author{Henry Borthwick \\ COSC 473 Term Project 2025}
-\date{\today}
+\title{Secret Raffle: A Privacy Preserving Lottery dApp on Secret Network}
+\author{Henry J. Borthwick \\ COSC 473 Assignment 3 Project 2025}
 
 \begin{document}
 \maketitle
@@ -22,66 +21,28 @@
 % Abstract
 % ---------------------------------------------------------------------------
 \begin{abstract}
-% Public blockchain raffles typically expose every ticket purchase and rely on off-chain scripts to choose winners, eroding both participant privacy and trust in the outcome.  We present \emph{Secret Raffle}, a fully on-chain, end-to-end verifiable lottery built with CosmWasm and deployed on the Secret Network.  Our smart-contract architecture segregates privileges (admin \emph{vs.} player) and leverages Secret Network's encrypted state to hide individual ticket balances while escrow-ing the pot in native \texttt{uSCRT}.  After a configurable end-time the contract derives pseudo-randomness from the encrypted block seed to deterministically select a winner proportional to ticket holdings.  The winner can atomically claim the prize and, using a viewing-key permit, privately retrieve a hidden \emph{secret phrase}—a mechanic that can serve as a redemption code or proof-of-win in downstream experiences.
-
-% A React/TypeScript front-end built with Vite and SecretJS abstracts wallet connection, ticket purchase, and results display into three intuitive clicks.  End-to-end tests executed on pulsar-3 testnet demonstrate a \textless200 kGas ticket purchase, \textless300 kGas winner selection, and successful prize payouts for up to \(10^{6}\) tickets without overflow.  These results validate that privacy-preserving raffles can be delivered with minimal contract complexity while retaining familiar user-experience patterns.  The project serves as a blueprint for more sophisticated, fair-chance games and fund-raising mechanisms in the Cosmos ecosystem.
+  
 \end{abstract}
 
 % ---------------------------------------------------------------------------
 % Problem Statement & Motivation 1/2 page
 % ---------------------------------------------------------------------------
 \section{Problem Statement \& Motivation}
-
 \subsection{Problem Statement}
-
-\subsubsection{Centralised Raffles: A Broken Trust Model}
-Traditional online raffles---whether used for charity fund-raising, community giveaways, or customer engagement campaigns---are almost always operated by a central authority who (1) collects entry fees, (2) draws a winner off-chain, and (3) promises to distribute the prize. Participants must blindly trust that the organiser will not tamper with the draw, exclude entries, or walk away with the pot. Even projects that migrate ticket sales on-chain (e.g., Ethereum ERC-20 based lotteries) still expose a major weakness: every purchase is publicly traceable, so whales can copy trade large entries, and winner selection typically relies on external random-number services or opaque scripts.
-
-\subsubsection{The Need for Verifiable \emph{and} Private Lotteries}
-Communities and creators increasingly want ways to raise funds or distribute rewards in a manner that is both provably fair \emph{and} respectful of participants' privacy. A transparent contract is essential for auditability, yet publishing every wallet's ticket balance can deter users who prefer to keep spending habits or donation sizes confidential. Likewise, sourcing randomness must not introduce new trust assumptions or central points of failure.
+\textbf{Centralised Raffles: A Broken Trust Model:} Raffles are almost always operated on a central authority model where we rely upon a central actor for raffle integrity. Raffle integrity being that there is no 'rigging of the draw' or any deviation from allowing users to buy tickets, have a truly random ticket drawn and the winner receive the prize. Further more, even with raffles moved to on chain systems, they expose a major weakness: every purchase is publicly traceable and winner selection typically relies on external random-number services or opaque scripts. \textbf{The need for verifiable and private lotteries:} Raffles need a way to raise funds or distribute rewards in a manner that is both provably fair \emph{and} respectful of participants' privacy. A transparent contract is essential for auditability, yet publishing every wallet's ticket balance can comprise user privacy or raffle integrity. Likewise, sourcing randomness must not introduce new trust assumptions or central points of failure.
 
 \subsection{Motivation}
-
-\subsubsection{Why Secret Network + CosmWasm?}
-Secret Network brings encrypted contract state and compute to the Cosmos ecosystem. By storing ticket counts and the raffle's secret phrase inside the Trusted Execution Environment (TEE), our \emph{Secret Raffle} contract simultaneously delivers:
-\begin{itemize}
-  \item \textbf{Privacy:} Individual ticket balances are hidden from everyone except the rightful owner, revealed only through permissioned queries (\texttt{Permit}) after wallet signature.
-  \item \textbf{Trustless Funds Escrow:} All \texttt{uSCRT} payments are held by the contract; payout executes atomically when the winner calls \texttt{claim\_prize}. No organiser custody is ever required.
-  \item \textbf{On-chain Randomness:} The contract derives a pseudo-random seed from Secret Network's encrypted block entropy, eliminating reliance on third-party VRF services.
-  \item \textbf{Role-based Access Control:} Only the admin can configure and start the raffle, while any user may purchase tickets; only the selected winner can claim the pot.
-\end{itemize}
-These properties address both fairness and privacy gaps in existing lottery implementations, providing a robust fund-raising primitive that communities can trust without sacrificing anonymity.
+\textbf{Why Secret Network + CosmWasm:} Secret Network brings encrypted contract state and compute to the Cosmos ecosystem. By storing ticket counts and the raffle's secret phrase inside the Trusted Execution Environment (TEE), our \emph{Secret Raffle} contract delivers: (1) \emph{Privacy:} Individual ticket balances are hidden except from the rightful owner, revealed only through permissioned queries (\texttt{Permit}) after wallet signature. (2) \emph{Trustless Funds Escrow:} All payments are held by the contract with payout executed when the winner is selected and they claim their prize at their discretion. (3) \emph{On-chain randomness:} derives a pseudo-random seed from Secret Network's encrypted block entropy, eliminating reliance on untrusted opaque or third-party services. (4) \emph{Role based access control:} Only the admin can configure and start the raffle, while any user may purchase tickets; only the selected winner can claim the pot. These properties address both fairness and privacy gaps in existing lottery raffle systems, providing a trustless and pseudo-anonymous service.
 
 % ---------------------------------------------------------------------------
 % Related Work & Context 1/2 page
 % ---------------------------------------------------------------------------
 \section{Related Work \& Context}
-
 \subsection{Context}
-Blockchain lotteries aim to offer fair and transparent prize distribution, but existing solutions compromise either privacy or trust. Public ledgers expose user activity, while privacy-focused designs often rely on off-chain randomness or trusted parties, reducing verifiability. \emph{Secret Raffle} addresses these gaps by combining:
-\begin{itemize}
-  \item \emph{Encrypted state} for confidential ticket balances.
-  \item \emph{Enclave-derived randomness} to eliminate oracle dependence.
-  \item \emph{Self-contained winner selection and payout} within a single CosmWasm contract.
-  \item \emph{Standardised permit queries} for private winner verification.
-\end{itemize}
-This design offers a unique blend of privacy and verifiability, absent in current Cosmos ecosystem lotteries.
+Blockchain lotteries aim to offer fair and transparent prize distribution, but existing solutions compromise either privacy or trust. Public ledgers expose user activity, while privacy-focused designs often rely on off-chain randomness or trusted parties, reducing verifiability. \emph{Secret Raffle} addresses these gaps by combining (1) \emph{Encrypted state:} for confidential ticket balances. (2) \emph{Enclave-derived randomness:} to eliminate oracle dependence. (3) \emph{Self-contained winner selection and payout:} within a single CosmWasm contract. (4) \emph{Standardised permit queries:} for private winner verification.
 
-% Surveying existing solutions
 \subsection{Related Work}
-
-\subsubsection{Public On-Chain Lotteries}
-\begin{itemize}
-  \item \textbf{PoolTogether (Ethereum):} A ``no-loss'' lottery pooling deposits into interest-bearing protocols, with winners selected via Chainlink VRF. It ensures transparency but exposes transactions publicly and depends on a trusted oracle~\cite{PoolTogether}.
-  \item \textbf{PancakeSwap Lottery (BNB Smart Chain):} Users buy tickets with CAKE tokens, and winners are chosen using block hash entropy. Ticket counts are visible, enabling behavior analysis and strategic exploitation~\cite{PancakeSwap}.
-  \item \textbf{JunoLottery (Cosmos/Juno):} An open-source CosmWasm raffle contract, limited by public-state privacy issues and reliance on external winner selection~\cite{JunoLottery}.
-\end{itemize}
-
-\subsubsection{Privacy-Focused Blockchain Games}
-\begin{itemize}
-  \item \textbf{SecretScratchCard (Secret Network):} Showcases private NFT ownership but uses off-chain randomness and lacks communal fund management~\cite{SecretScratchCard}.
-  \item \textbf{Shade Protocol's ``Silk Raffle'':} Awarded tickets to SILK stakers, with winners selected via a trusted script, limiting transparency~\cite{ShadeRaffle}.
-\end{itemize}
+\textbf{(1) PoolTogether (Ethereum):} A ``no-loss'' lottery pooling deposits into interest-bearing protocols, with winners selected via Chainlink VRF. It ensures transparency but exposes transactions publicly and depends on a trusted oracle~\cite{PoolTogether}. \textbf{(2) PancakeSwap Lottery (BNB Smart Chain):} Users buy tickets with CAKE tokens, and winners are chosen again using Chainlink VRF. Ticket counts are visible, enabling behavior analysis and strategic exploitation~\cite{PancakeSwap}. \textbf{(3) Lucky45 (Cosmos/L2):} Lucky45 is a 2025 modular on-chain protocol that begins with a decentralized lottery leveraging on-chain verifiable randomness, expanding into a suite of luck-based games.~\cite{Lucky45}.
 
 % ---------------------------------------------------------------------------
 % Defining the Architecture & Contract Design section
@@ -89,76 +50,101 @@ This design offers a unique blend of privacy and verifiability, absent in curren
 \section{Architecture \& Contract Design}
 
 \subsection{Architecture}
-Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram Appendix} shows the frontend contract interaction architecture structure diagram for the dApp.
+Figure \ref{fig:Frontend Contract Interaction Architecture Structure Diagram Appendix} shows the frontend-contract interaction architecture structure diagram for the dApp.
 
 \subsection{Contract Design}
 
-\subsubsection{ExecuteMsg}
-\begin{tabular}{@{}lp{9cm}@{}}
-  \textbf{set\_raffle} & Admin-only. Sets \texttt{ticket\_price}, \texttt{end\_time}, and \texttt{secret} phrase. \\
-  \textbf{start\_raffle} & Opens raffle for ticket purchases. \\
-  \textbf{buy\_ticket} & Public. Accepts \texttt{uSCRT}; mints tickets per \texttt{ticket\_price}. \\
-  \textbf{select\_winner} & Callable post-\texttt{end\_time}. Picks winner based on ticket holdings. \\
-  \textbf{claim\_prize} & Winner claims pot and unlocks secret viewing. \\
-\end{tabular}
+% ExecuteMsg Schema table
+\begin{table}[h]
+  \centering
+  \caption{ExecuteMsg Schema}
+  \begin{tabular}{@{}lp{9cm}@{}}
+    \toprule
+    \textbf{Message} & \textbf{Description} \\
+    \midrule
+    \texttt{set\_raffle} & Admin-only. Sets \texttt{ticket\_price}, \texttt{end\_time}, and \texttt{secret} phrase. \\
+    \midrule
+    \texttt{start\_raffle} & Opens raffle for ticket purchases. \\
+    \midrule
+    \texttt{buy\_ticket} & Public. Accepts \texttt{uSCRT}; mints tickets per \texttt{ticket\_price}. \\
+    \midrule
+    \texttt{select\_winner} & Callable post-\texttt{end\_time}. Picks winner based on ticket holdings. \\
+    \midrule
+    \texttt{claim\_prize} & Winner claims pot and unlocks secret viewing. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\subsubsection{QueryMsg}
-\begin{center}
-\begin{tabular}{@{}llll@{}}
-\toprule
-Variant & Fields & Access & Purpose \\
-\midrule
-\texttt{raffle\_info} & -- & Public & Raffle summary \\
-\texttt{with\_permit} $\rightarrow$ \texttt{get\_secret} & \texttt{Permit} & Winner & Reveal secret phrase \\
-\texttt{with\_permit} $\rightarrow$ \texttt{get\_tickets} & \texttt{Permit} & Ticket holder & View own ticket count \\
-\bottomrule
-\end{tabular}
-\end{center}
+% QueryMsg Schema table
+\begin{table}[h]
+  \centering
+  \caption{QueryMsg Schema}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    \textbf{Variant} & \textbf{Fields} & \textbf{Access} & \textbf{Purpose} \\
+    % \midrule
+    \texttt{raffle\_info} & -- & Public & Raffle summary \\
+    \midrule
+    \texttt{with\_permit} $\rightarrow$ \texttt{get\_secret} & \texttt{Permit} & Winner & Reveal secret phrase \\
+    \midrule
+    \texttt{with\_permit} $\rightarrow$ \texttt{get\_tickets} & \texttt{Permit} & Ticket holder & View own ticket count \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\subsubsection{State Layout}
-\begin{center}
-\begin{tabular}{@{}lll@{}}
-\toprule
-Key & Type & Purpose \\
-\midrule
-\texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
-\texttt{RAFFLE} & \texttt{Item<Raffle>} & Config: end time, price, secret \\
-\texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
-\texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
-\texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
-\texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
-\texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
-\texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
-\bottomrule
+% State Layout table
+\begin{table}[h]
+  \centering
+  \caption{State Layout}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
+    \midrule
+    \texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
+    \texttt{RAFFLE} & \texttt{Item<Raffle>} & Config: end time, price, secret \\
+    \texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
+    \texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
+    \texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
+    \texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
+    \texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
+    \texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
+    \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
-\subsubsection{Special Features}
-The contract leverages Secret Network's privacy stack and demonstrates several advanced patterns:
-\begin{itemize}
-  \item \textbf{Encrypted State:} Ticket counts and the hidden secret phrase are stored inside the enclave, never appearing on the public ledger.
-  \item \textbf{Permit-Based Queries:} Access to private data requires a wallet-signed \texttt{Permit}, ensuring only authorised users can view their tickets or the secret.
-  \item \textbf{On-chain Randomness (Stretch Goal):} Winner selection draws entropy from the encrypted block seed, showcasing a fully on-chain random draw without external VRF services.
-  \item \textbf{Timelock Pattern (Stretch Goal):} Privileged actions such as \texttt{select\_winner} are gated by an \texttt{end\_time} timestamp, illustrating time-delayed, opt-out execution flows common in DAO governance.
-  \item \textbf{Modular Monorepo Architecture:} The repository bundles contract, CLI uploader, and React UI as separate workspaces. This layout is ready for multi-contract expansion (e.g., CW20 ticket token or marketplace) while keeping dev-ops simple.
-  \item \textbf{IBC / Cross-chain Ready:} Built on \texttt{secret\_cosmwasm\_std~1.1}, the contract can be extended with IBC message handlers to escrow prizes across Cosmos zones.
-  \item \textbf{Developer UX Extras:} Auto-generated JSON schemas, typed SecretJS hooks, and detailed architecture diagrams accelerate contributor onboarding and auditing.
-\end{itemize}
+\begin{table}[h]
+  \centering
+  \caption{Security Considerations}
+  \begin{tabular}{@{}lp{10cm}@{}}
+    \toprule
+    \textbf{Aspect} & \textbf{Design Notes} \\
+    \midrule
+    Access Control & Admin-only actions restricted; UI conceals options for non-admins. \\
+    Edge Cases & Zero-ticket scenarios handled without errors. \\
+    Randomness & Block entropy used for demo; upgradable to Secret Randomness API. \\
+    Privacy & Encrypted state with permit-only access. \\
+    Upgradability & State design supports future enhancements without breaking changes. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\subsubsection{Security Considerations}
-\begin{center}
-\begin{tabular}{@{}lp{10cm}@{}}
-\toprule
-Aspect & Design Notes \\
-\midrule
-Access Control & Admin-only actions restricted; UI conceals options for non-admins. \\
-Edge Cases & Zero-ticket scenarios handled without errors. \\
-Randomness & Block entropy used for demo; upgradable to Secret Randomness API. \\
-Privacy & Encrypted state with permit-only access. \\
-Upgradability & State design supports future enhancements without breaking changes. \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{table}[h]
+  \centering
+  \caption{Special Features}
+  \begin{tabular}{@{}lp{10cm}@{}}
+    \toprule
+    \textbf{Feature} & \textbf{Description} \\
+    \midrule
+    Encrypted State & Ticket counts and the hidden secret phrase are stored inside the enclave, never appearing on the public ledger. \\
+    \midrule
+    On-chain Randomness (Stretch Goal) & Winner selection draws entropy from the encrypted block seed, showcasing a fully on-chain random draw without external VRF services. \\
+    \midrule
+    Timelock Pattern (Stretch Goal) & Privileged actions such as \texttt{select\_winner} are gated by an \texttt{end\_time} timestamp. \\
+    \midrule
+    Other Smart Contract Dev Feature (Stretch Goal) & Permit-Based Queries access to private data requires a wallet-signed \texttt{Permit}, ensuring only authorised users can view their tickets or the secret. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 % ---------------------------------------------------------------------------
 % Frontend Workflow & UX 1/4 page
@@ -228,16 +214,6 @@ PoolTogether. ``A no-loss lottery built on Ethereum.'' Available: \url{https://w
 
 \bibitem{PancakeSwap}
 PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswap.finance/products/lottery}
-
-\bibitem{JunoLottery}
-``JunoLottery.'' GitHub repository. Available: \url{https://github.com/CosmosContracts/juno-lottery}
-
-\bibitem{SecretScratchCard}
-``SecretScratchCard.'' GitHub repository. Available: \url{https://github.com/scrtlabs/SecretScratchcard}
-
-\bibitem{ShadeRaffle}
-Shade Protocol. ``Silk Raffle.'' Project announcements, 2023.
-
 \end{thebibliography}
 
 \newpage
@@ -317,5 +293,24 @@ Shade Protocol. ``Silk Raffle.'' Project announcements, 2023.
   \caption{Frontend Architecture Structure Diagram.}
   \label{fig:Frontend Architecture Structure Diagram Appendix}
 \end{figure}
+
+\begin{table}[h]
+  \centering
+  \caption{State Layout}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
+    \midrule
+    \texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
+    \texttt{RAFFLE} & \texttt{Item<Raffle>} & Config: end time, price, secret \\
+    \texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
+    \texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
+    \texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
+    \texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
+    \texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
+    \texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \end{document}
