@@ -9,24 +9,17 @@ const CONTRACT_ADDR = import.meta.env.VITE_CONTRACT_ADDR;
 const CONTRACT_CODE_HASH = import.meta.env.VITE_CONTRACT_CODE_HASH;
 
 // NOTE: When generating a Secret Network query permit with Keplr, the final
-// boolean flag (`isKeplr`) **must be set to `true`.**  If this is accidentally
-// changed back to `false`, the contract will reject the query with
-// "Failed to verify signatures for the given permit".  Keep this here as a
-// reminder to avoid regressions.
+// boolean flag (`isKeplr`) must be set to `true`.  If changed back to `false`, the contract will reject the query with
+// "Failed to verify signatures for the given permit".
 
 /**
  * NOTE ON CUSTOM EVENTS
  * ----------------------
- * This hook is the single source of truth for contract interactions.  Whenever
- * a transaction is submitted we emit two browser-wide custom events so that
- * UI components in completely separate trees can stay in sync without
- * prop-drilling or global state libraries:
- *   • `raffle-loading`  – dispatched with `{ detail: boolean }` before/after a
- *     tx to toggle a global "Waiting for blockchain" overlay.
- *   • `raffle-updated` – fired once a tx is confirmed so listeners can
- *     immediately refetch on-chain state instead of waiting for the next poll.
- * If you refactor or rename these make sure to update all listeners (e.g.
- * HomePage.tsx) otherwise the UI will silently break.
+ * When a transaction is submitted we emit two browser wide custom events so that UI components in completely separate trees can stay in sync without
+ * prop drilling or global state libraries:
+ *   • `raffle-loading`  – dispatched with `{ detail: boolean }` before/after a tx to toggle a global "Waiting for blockchain" overlay.
+ *   • `raffle-updated` – fired once a tx is confirmed so listeners can immediately refetch on-chain state instead of waiting for the next poll.
+ * If change make sure to update all listeners (e.g. HomePage.tsx) otherwise the UI will silently break.
  */
 
 export const useRaffle = () => {
@@ -40,6 +33,7 @@ export const useRaffle = () => {
   // ---------------------------------------------------------------------------
   // Helper: fetch the number of tickets owned by the connected wallet
   // ---------------------------------------------------------------------------
+  // invoked in frontend by <RaffleInfo> when user checks their ticket count
   const getMyTickets = useCallback(async () => {
     if (!context?.secretJs || !context.address) return;
     try {
@@ -76,6 +70,7 @@ export const useRaffle = () => {
   // `silent=true` it will NOT touch the global `loading` / `error` flags so that
   // background polls don't flicker the UI.
   // ---------------------------------------------------------------------------
+  // called in Frontend on page load & whenever 'raffle-updated' fires to refresh on-screen state
   const getRaffleInfo = useCallback(async (silent: boolean = false) => {
     if (!context?.secretJs) return;
     if (!silent) {
@@ -138,6 +133,7 @@ export const useRaffle = () => {
     }
   }, [context?.secretJs, showError]);
 
+  // triggered in Frontend from <AdminPanel> to set ticket price, end time & secret
   const setRaffle = async (ticketPrice: string, endTime: string | number, secret: string) => {
     if (!context?.secretJs || !context.address) return;
     window.dispatchEvent(new CustomEvent('raffle-loading', { detail: true }));
@@ -177,6 +173,7 @@ export const useRaffle = () => {
   
   // ------------------ Additional contract interactions ------------------
 
+  // frontend users in <AdminPanel> click "Start Raffle" button – opens ticket sales
   const startRaffle = async () => {
     if (!context?.secretJs || !context.address) return;
     window.dispatchEvent(new CustomEvent('raffle-loading', { detail: true }));
@@ -211,6 +208,7 @@ export const useRaffle = () => {
     }
   };
 
+  // used in frontend by <AdminPanel> "Select Winner" button – picks a winner after raffle ends
   const selectWinner = async () => {
     if (!context?.secretJs || !context.address) return;
     if (raffleInfo && raffleInfo.totalTickets === 0) {
@@ -251,6 +249,7 @@ export const useRaffle = () => {
     }
   };
 
+  // used in frontend by <BuyTicket> component – purchases one or more tickets
   const buyTicket = async (numTickets: number) => {
     if (!context?.secretJs || !context.address || !raffleInfo) return;
     window.dispatchEvent(new CustomEvent('raffle-loading', { detail: true }));
@@ -288,6 +287,7 @@ export const useRaffle = () => {
     }
   };
 
+  // used in frontend by <ClaimPrize> component – winner claims the prize pool
   const claimPrize = async () => {
     if (!context?.secretJs || !context.address) return;
     window.dispatchEvent(new CustomEvent('raffle-loading', { detail: true }));
@@ -322,6 +322,7 @@ export const useRaffle = () => {
     }
   };
 
+  // used in frontend by <ViewSecret> component – reveals the raffle secret for verification
   const getSecret = async (): Promise<string | null> => {
     if (!context?.secretJs || !context.address) return null;
     window.dispatchEvent(new CustomEvent('raffle-loading', { detail: true }));
@@ -356,12 +357,9 @@ export const useRaffle = () => {
       if (rawSecret == null) {
         secretString = null;
       } else if (typeof rawSecret === 'string') {
-        // The contract may return either plain-text *or* base64 depending on how
-        // the secret was stored.  To avoid leaking unreadable gibberish we do a
-        // quick heuristic: if the string *looks* like base64 we attempt to
-        // decode, otherwise we treat it as regular UTF-8.  Keep this logic when
-        // touching the contract response shape.
-        // Only attempt base64 decoding if the string *looks* like base64. Otherwise treat it as plain-text.
+        // The contract may return either plain-text *or* base64 depending on how the secret was stored. To avoid leaking unreadable gibberish we do a
+        // quick heuristic: if the string looks like base64 we attempt to decode, otherwise we treat it as regular UTF-8.  Keep this logic when touching the contract response shape.
+        // Only attempt base64 decoding if the string looks like base64. Otherwise treat it as plain-text.
         const maybeBase64 = rawSecret.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(rawSecret);
         if (maybeBase64) {
           try {

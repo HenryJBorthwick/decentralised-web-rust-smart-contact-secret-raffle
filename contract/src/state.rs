@@ -34,7 +34,7 @@ pub static TOTAL_TICKETS: Item<u64> = Item::new(TOTAL_TICKETS_KEY);
 pub static TICKETS_KEY: &[u8] = b"tickets";
 pub static TICKETS: Keymap<CanonicalAddr, u64> = Keymap::new(TICKETS_KEY);
 
-// Rationale: We store ticket counts keyed by *canonical* addresses so we can
-// compare/query efficiently without worrying about Bech32 casing.  Do **not**
+// NOTE: We store ticket counts keyed by canonical addresses so we can
+// compare/query efficiently without worrying about Bech32 casing.  Do not
 // switch to human-readable `Addr` without normalising first, otherwise duplicate
 // entries for the same wallet could occur (e.g. `secret1...` vs `SECRET1...`).

@@ -35,8 +35,7 @@ export const SecretJsContextProvider: FC<SecretJsContextProviderProps> = ({ chil
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     // Keep retrying until the Keplr extension injects the required helpers –
-    // this is crucial during page reloads where React may mount before Keplr
-    // finishes initialising.
+    // this is crucial during page reloads where React may mount before Keplr finishes initialising.
     while (
       !window.keplr ||
       !window.getEnigmaUtils ||
@@ -51,8 +50,7 @@ export const SecretJsContextProvider: FC<SecretJsContextProviderProps> = ({ chil
     };
 
     // We intentionally disable Keplr's balance check to avoid "insufficient
-    // funds" client-side errors when the wallet holds enough SCRT but *uSCRT*
-    // (gas denom) may look low.  The contract itself still enforces fees.
+    // funds" client-side errors when the wallet holds enough SCRT but *uSCRT* (gas denom) may look low.  The contract itself still enforces fees.
     const keplrOfflineSigner = window.getOfflineSignerOnlyAmino(SECRET_CHAIN_ID);
     const accounts = await keplrOfflineSigner.getAccounts();
     const userAddress = accounts[0].address;

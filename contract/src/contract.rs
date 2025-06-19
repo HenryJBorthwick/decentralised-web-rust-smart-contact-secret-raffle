@@ -9,26 +9,23 @@ use crate::state::{
     WINNER_SELECTED,
 };
 
-// =============================================================================================
+// ---------------------------------------------------------------------------------------------
 // Secret Network Raffle Contract
 // ---------------------------------------------------------------------------------------------
 // High-level flow:
 // 1. Admin configures raffle with `set_raffle` (secret phrase, ticket price, end time).
-// 2. Admin starts raffle with `start_raffle` → ticket sales open.
+// 2. Admin starts raffle with `start_raffle` then ticket sales open.
 // 3. Users purchase tickets via `buy_ticket` by sending uSCRT (multiple allowed).
 // 4. After `end_time`, admin calls `select_winner`:
-//      • If tickets were sold → pick pseudo-random winner weighted by ticket count.
-//      • If zero tickets sold → mark raffle as finished without a winner (edge-case).
+//      • If tickets were sold then pick pseudo-random winner weighted by ticket count.
+//      • If zero tickets sold then mark raffle as finished without a winner (edge-case).
 // 5. Winning address can `claim_prize` to receive the pot and may query the hidden secret
 //    phrase (`get_secret`) using a permit.
-// =============================================================================================
+// ---------------------------------------------------------------------------------------------
 
-// NOTE: This contract purposefully avoids storing a single enum status and
+// NOTE: contract purposefully avoids storing a single enum status and
 // instead tracks lifecycle steps with *separate* bool flags (RAFFLE_STARTED,
-// WINNER_SELECTED, PRIZE_CLAIMED).  This makes future migrations simpler
-// because adding a new state only requires introducing another flag without
-// breaking serialization of the existing ones.  If you consolidate these flags
-// remember to write a proper migration
+// WINNER_SELECTED, PRIZE_CLAIMED).
 
 #[entry_point]
 /// Contract instantiation – records the admin address and initialises all state flags.
@@ -51,8 +48,7 @@ pub fn instantiate(
 }
 
 #[entry_point]
-/// Main entry for executing state-changing messages. Delegates to helper functions
-/// based on the variant of `ExecuteMsg`.
+/// Main entry for executing state-changing messages. Delegates to helper functions based on the variant of `ExecuteMsg`.
 pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     match msg {
         ExecuteMsg::SetRaffle { secret, ticket_price, end_time } => {
@@ -110,8 +106,7 @@ fn try_start_raffle(deps: DepsMut, sender: cosmwasm_std::Addr) -> StdResult<Resp
 }
 
 /// Public endpoint allowing users (non-admin) to buy one or more tickets.
-/// Validates raffle status, timing and payment amount, then updates per-user and
-/// global ticket counters.
+/// Validates raffle status, timing and payment amount, then updates per-user and global ticket counters.
 fn try_buy_ticket(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Response> {
     if !RAFFLE_STARTED.load(deps.storage)? {
         return Err(StdError::generic_err("Raffle not started"));
@@ -135,8 +130,7 @@ fn try_buy_ticket(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Respo
         ));
     }
 
-    // SAFETY: convert to u64 only after checking bounds – prevents silent
-    // truncation when a whale tries to buy > u64::MAX tickets in a single tx.
+    // SAFETY: convert to u64 only after checking bounds – prevents silent truncation when a whale tries to buy > u64::MAX tickets in a single tx.
     let tickets_bought_u128 = funds.amount.u128() / raffle.ticket_price;
     if tickets_bought_u128 > u64::MAX as u128 {
         return Err(StdError::generic_err(
@@ -166,8 +160,7 @@ fn try_buy_ticket(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Respo
 }
 
 /// Admin-only (implicitly – front-end restricts) endpoint run after the raffle end
-/// time. Picks a random winner proportional to ticket holdings, or finalises with
-/// no winner if zero tickets were sold.
+/// time. Picks a random winner proportional to ticket holdings, or finalises with no winner if zero tickets were sold.
 fn try_select_winner(deps: DepsMut, env: Env) -> StdResult<Response> {
     let raffle = RAFFLE.load(deps.storage)?;
     if env.block.time < raffle.end_time {
@@ -178,10 +171,9 @@ fn try_select_winner(deps: DepsMut, env: Env) -> StdResult<Response> {
     }
     let total_tickets = TOTAL_TICKETS.load(deps.storage)?;
 
-    // Gracefully handle the edge-case where the raffle ended but no one bought tickets.
+    // handle the edge-case where the raffle ended but no one bought tickets.
     // In this scenario we mark the raffle as completed without a winner instead of
-    // reverting the transaction. This prevents the admin from wasting fees and
-    // still allows the raffle lifecycle to progress.
+    // reverting the transaction. This prevents the admin from wasting fees and still allows the raffle lifecycle to progress.
     if total_tickets == 0 {
         WINNER.save(deps.storage, &None)?;
         WINNER_SELECTED.save(deps.storage, &true)?;
@@ -194,10 +186,9 @@ fn try_select_winner(deps: DepsMut, env: Env) -> StdResult<Response> {
         .block
         .random
         .ok_or_else(|| StdError::generic_err("Randomness unavailable"))?;
-    // The first 8 bytes give us a u64.  Using modulo total_tickets provides
-    // pseudo-random selection proportional to ticket counts.  The slight modulo
-    // bias is negligible for small raffles and acceptable for demo purposes –
-    // **do not** use this in production where large stakes are involved.
+    // The first 8 bytes give us a u64. Using modulo total_tickets provides
+    // pseudo-random selection proportional to ticket counts. The slight modulo
+    // bias is negligible for small raffles and acceptable for proof of concept purpose
     let random_index = u64::from_le_bytes(random_seed.0[..8].try_into().unwrap()) % total_tickets;
     let mut running_sum = 0u64;
     let mut winner = None;
@@ -218,7 +209,7 @@ fn try_select_winner(deps: DepsMut, env: Env) -> StdResult<Response> {
 }
 
 /// Allows the previously selected winner to withdraw the entire contract balance
-/// (the prize pot). Once successful, `PRIZE_CLAIMED` is set to prevent double spends.
+/// (the prize pot). Once successful, `PRIZE_CLAIMED` is set to prevent double spends
 fn try_claim_prize(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Response> {
     if !WINNER_SELECTED.load(deps.storage)? {
         return Err(StdError::generic_err("Winner not selected"));
@@ -234,8 +225,7 @@ fn try_claim_prize(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Resp
         return Err(StdError::generic_err("Only winner can claim prize"));
     }
     let balance = deps.querier.query_balance(&env.contract.address, "uscrt")?;
-    // We purposely transfer *all* uscrt so there is never residual dust left in
-    // the contract – simplifies client logic when inferring `prize_claimed`.
+    // transfer all uscrt so there is never residual dust left in the contract – simplifies client logic when inferring `prize_claimed`.
     if balance.amount.is_zero() {
         return Err(StdError::generic_err("No prize available"));
     }
@@ -253,8 +243,8 @@ fn try_claim_prize(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Resp
 
 #[entry_point]
 /// Read-only queries. Currently supports:
-///  • `raffle_info` – public data about the raffle state.
-///  • `with_permit` – authenticated queries using secret-toolkit permits.
+/// `raffle_info` – public data about the raffle state.
+/// `with_permit` – authenticated queries using secret-toolkit permits.
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::RaffleInfo {} => to_binary(&query_raffle_info(deps)?),
@@ -282,8 +272,7 @@ fn query_raffle_info(deps: Deps) -> StdResult<QueryAnswer> {
 
     let winner = if winner_selected {
         // It is possible the raffle ended with zero tickets, in which case there is
-        // no winner. Return None instead of throwing an error so that UIs can
-        // gracefully handle the "no winner" scenario.
+        // no winner. Return None instead of throwing an error so that UIs can handle the "no winner" scenario.
         match WINNER.load(deps.storage)? {
             Some(addr) => Some(deps.api.addr_humanize(&addr)?),
             None => None,

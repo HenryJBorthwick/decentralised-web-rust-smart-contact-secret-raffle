@@ -45,9 +45,8 @@ pub enum QueryWithPermit {
     GetTickets { },
 }
 
-// When creating a permit client-side you **must** include the `owner`
-// permission in `allowed_permissions`; otherwise the contract will reject the
-// query.  See `query_with_permit` validation logic in contract.rs.
+// When creating a permit client-side you must include the `owner` permission in `allowed_permissions`; 
+// otherwise the contract will reject the query. See `query_with_permit` validation logic in contract.rs.
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]

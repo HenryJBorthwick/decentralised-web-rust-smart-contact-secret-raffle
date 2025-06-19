@@ -26,9 +26,7 @@ const admin = new SecretNetworkClient({
 // Utility sleep helper
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/*
- * Instantiate the raffle contract and return the new contract address
- */
+// Instantiate the raffle contract and return the new contract address
 async function instantiateContract(codeId: string, contractCodeHash: string): Promise<string> {
   const initMsg = {}; // no init params
   const tx = await admin.tx.compute.instantiateContract(
@@ -42,8 +40,7 @@ async function instantiateContract(codeId: string, contractCodeHash: string): Pr
     { gasLimit: 400_000 }
   );
 
-  // Extract the contract address from tx logs
-  // @ts-ignore – secretjs typing does not include arrayLog
+  // Extract the contract address from tx logs @ts-ignore – secretjs typing does not include arrayLog
   const contractAddress: string = tx.arrayLog!.find(
     (log: any) => log.type === "message" && log.key === "contract_address"
   ).value;
@@ -134,9 +131,8 @@ async function main() {
   console.log("📜 Contract address:", contract_address, "\n");
 
   // Raffle timing helpers -------------------------------------------------
-  // Give plenty of time (2 min) between start and end so that network
-  // latency or slower blocks do not cause unintended early "raffle ended"
-  // errors during the tests.
+  // Give lots of time (2 min) between start and end so that network
+  // latency or slower blocks do not cause unintended early "raffle ended" errors during the tests.
 
   const RAFFLE_DURATION = 120; // seconds
   let end_time: string;
@@ -247,8 +243,7 @@ async function main() {
   }
 
   /* ---------------- Admin sets up the raffle --------------------------- */
-  // Refresh end_time just before the real set_raffle so the raffle has the
-  // full RAFFLE_DURATION window starting *now*.
+  // Refresh end_time just before the real set_raffle so the raffle has the full RAFFLE_DURATION window starting now.
   await refreshEndTime();
   console.log("Admin – set_raffle");
 
