@@ -1,4 +1,4 @@
-\documentclass[9pt]{extarticle}
+\documentclass[8pt]{extarticle}
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
 \usepackage{hyperref}
@@ -7,6 +7,10 @@
 \usepackage{booktabs}
 \usepackage{ifthen}
 \usepackage{tabularx}
+
+% Reduce top margin so the title sits higher on the first page
+\geometry{top=0.25cm}
+\geometry{margin=1.5cm}
 
 % ---------------------------------------------------------------------------
 % Title
@@ -93,8 +97,6 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
 Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lucky45protocol.gitbook.io/lucky45protocol}
 \end{thebibliography}}
 
-\newpage
-
 % ---------------------------------------------------------------------------
 % Appendix
 % ---------------------------------------------------------------------------
@@ -103,24 +105,22 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
 % ---------------------------------------------------------------------------
 % Architecture & Contract Design, frontend contract interaction architecture structure diagram
 % ---------------------------------------------------------------------------
-\subsection{Frontend Contract Interaction Architecture Structure Diagram}
+% \subsection{Frontend Contract Interaction Architecture Structure Diagram}
 \begin{figure}[h]
-  \vspace{-0.5cm}
-  \hspace{-2cm}
-  \includegraphics[width=1.3\textwidth]{Secret Raffle Monorepo Frontend Contract Interaction Diagram.png}
+  \vspace{0cm}
+  \hspace{-1cm}
+  \includegraphics[width=1.1\textwidth]{Secret Raffle Monorepo Frontend Contract Interaction Diagram.png}
   \caption{Frontend Contract Interaction Architecture Structure Diagram.}
   \label{fig:Frontend Contract Interaction Architecture Structure Diagram Appendix}
 \end{figure}
 
-\newpage
-
 % ---------------------------------------------------------------------------
 % Frontend Workflow & UX, frontend & UX workflow diagram
 % ---------------------------------------------------------------------------
-\subsection{Frontend \& UX Workflow Diagram}
+% \subsection{Frontend \& UX Workflow Diagram}
 \begin{figure}[h]
-  \vspace{0cm}
-  \hspace{0cm}
+  \vspace{-1.5cm}
+  \hspace{1.5cm}
   \includegraphics[width=0.6\textwidth]{frontend-workflow.png}
   \caption{Frontend \& UX Workflow Diagram.}
   \label{fig:Frontend Workflow Appendix}
@@ -134,6 +134,8 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
 % ExecuteMsg Schema table
 \begin{table}[h]
   \centering
+  % \vspace{-1.25cm}
+  \hspace{0cm}
   \caption{ExecuteMsg Schema}
   \label{tab:ExecuteMsg Schema}
   \begin{tabular}{@{}llll@{}}
@@ -153,9 +155,13 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
   \end{tabular}
 \end{table}
 
+\newpage
+
 % QueryMsg Schema table
 \begin{table}[h]
   \centering
+  % \vspace{-1.5cm}
+  \hspace{0cm}
   \caption{QueryMsg Schema}
   \label{tab:QueryMsg Schema}
   \begin{tabular}{@{}llll@{}}
@@ -171,9 +177,13 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
   \end{tabular}
 \end{table}
 
+% page 4 
+
 % State Layout table
 \begin{table}[h]
   \centering
+  \vspace{0cm}
+  \hspace{0cm}
   \caption{State Layout}
   \label{tab:State Layout}
   \begin{tabular}{@{}lll@{}}
@@ -192,11 +202,11 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
 \end{tabular}
 \end{table}
 
-\newpage
-
 % Security Considerations table
 \begin{table}[h]
   \centering
+  \vspace{0cm}
+  \hspace{0cm}
   \caption{Security Considerations}
   \label{tab:Security Considerations}
   \begin{tabular}{@{}lp{10cm}@{}}
@@ -217,6 +227,8 @@ Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lu
 % Special Features table
 \begin{table}[h]
   \centering
+  \vspace{0cm}
+  \hspace{0cm}
   \caption{Special Features}
   \label{tab:Special Features}
   \begin{tabularx}{\textwidth}{@{}lX@{}}
