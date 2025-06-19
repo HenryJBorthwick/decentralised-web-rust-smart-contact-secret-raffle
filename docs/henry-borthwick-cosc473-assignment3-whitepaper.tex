@@ -46,7 +46,7 @@ Blockchain lotteries aim to offer fair and transparent prize distribution, but e
 \textbf{(1) PoolTogether (Ethereum):} A ``no-loss'' lottery pooling deposits into interest-bearing protocols, with winners selected via Chainlink VRF. It ensures transparency but exposes transactions publicly and depends on a trusted oracle~\cite{PoolTogether}. \textbf{(2) PancakeSwap Lottery (BNB Smart Chain):} Users buy tickets with CAKE tokens, and winners are chosen again using Chainlink VRF. Ticket counts are visible, enabling behavior analysis and strategic exploitation~\cite{PancakeSwap}. \textbf{(3) Lucky45 (Cosmos/L2):} Lucky45 is a 2025 modular on-chain protocol that begins with a decentralized lottery leveraging on-chain verifiable randomness, expanding into a suite of luck-based games.~\cite{Lucky45}.
 
 % ---------------------------------------------------------------------------
-% Defining the Architecture & Contract Design section
+% Architecture & Contract Design 1 page
 % ---------------------------------------------------------------------------
 \section{Architecture \& Contract Design}
 
@@ -61,26 +61,26 @@ Tables \ref{tab:ExecuteMsg Schema}, \ref{tab:QueryMsg Schema}, and \ref{tab:Stat
 % Frontend Workflow & UX 1/4 page
 % ---------------------------------------------------------------------------
 \section{Frontend Workflow \& UX}
-The user and admin frontend interaction workflow and user experience is represented using a flow diagram in Figure \ref{fig:Frontend Workflow Appendix} showing the touch points of a user, admin and prize winner through the entire raffle process from raffle configuration to prize redemption. The figure also double as a UX contract showing what is exposed at each state.
+The user and admin frontend interaction workflow and user experience is represented using a flow diagram in Figure \ref{fig:Frontend Workflow Appendix} showing the touch points of a user, admin and prize winner through the entire raffle process, from raffle configuration to prize redemption. The figure also doubles as a UX contract showing what is exposed at each state.
 
 % ---------------------------------------------------------------------------
 % Implementation Choices & Tradeoffs 1/4 page
 % ---------------------------------------------------------------------------
 \section{Implementation Choices \& Tradeoffs}
 
-\textbf{(1) Flag based lifecycle tracking:} Instead of a single enum that serialises the raffle's current stage, the contract stores three independent boolean flags (\texttt{RAFFLE\_STARTED}, \texttt{WINNER\_SELECTED}, \texttt{PRIZE\_CLAIMED}). This requires one extra storage slot, but it simplifies future upgrades because adding a new phase is a non breaking change. However, this does take extra storage space and read cost. The trade off is forward compatibility over byte efficiency. \textbf{(2) On chain randomness via env.block.random:} Winner is picked by hashing the encrypted block seed and modding by \texttt{TOTAL\_TICKETS}. This removes dependency on external VRF oracles (lower latency, no additional fees), but with the cost of a small modulo bias. Because the maximum prize in the demo is intentionally small (\(<10~SCRT)\) and we judged the attack surface acceptable given that there would be a future upgrade path to integrate Secret Network's dedicated Randomness API for higher guarantees. \textbf{(3) Permit-Based Private Queries:} Reads (\texttt{get\_tickets}, \texttt{get\_secret}) require a SNIP-24 \emph{permit} included in the query payload. This keeps balances private while avoiding the UX friction of persistent viewing keys. The trade off is a larger query payload and one extra Keplr pop up, but the privacy trade off is acceptable given it does not prevent any critical user experience of the raffle.
+\textbf{(1) Flag based lifecycle tracking:} Instead of a single enum that serialises the raffle's current stage, the contract stores three independent boolean flags (\texttt{RAFFLE\_STARTED}, \texttt{WINNER\_SELECTED}, \texttt{PRIZE\_CLAIMED}). This requires one extra storage slot, but it simplifies future upgrades because adding a new phase is a non breaking change. However, this does take extra storage space and read cost. The trade off is forward compatibility over byte efficiency. This will help for future road map items. \textbf{(2) On chain randomness via env.block.random:} Winner is picked by hashing the encrypted block seed and modding by \texttt{TOTAL\_TICKETS}. This removes dependency on external VRF oracles (lower latency, no additional fees), but with the cost of a small modulo bias. Because the maximum prize in the demo is intentionally small (\(<10~SCRT)\) and we judged the attack surface acceptable given that there would be a future upgrade path to integrate Secret Network's dedicated Randomness API for higher guarantees. \textbf{(3) Permit-Based Private Queries:} Reads (\texttt{get\_tickets}, \texttt{get\_secret}) require a SNIP-24 \emph{permit} included in the query payload. This keeps balances private while avoiding the UX friction of persistent viewing keys. The trade off is a larger query payload and one extra Keplr pop up, but the privacy trade off is acceptable given it does not prevent any critical user experience of the raffle and sticks with the ideas of secret raffle.
 
 % ---------------------------------------------------------------------------
 % Future Work & Roadmap 1/4 page
 % ---------------------------------------------------------------------------
 \section{Future Work \& Roadmap}
 
-\textbf{(1) v1.1 – Security \& Reliability:} Goal of this upgrade is to enhance raffle fairness and security. Replace the demo modulo selection with Secret Network's VRF Randomness API to stop modulo bias and proposer grinding risk. Overall it will ensure cryptographically secure, unbiased winner selection increasing trust in the secret raffle system and promote greater stakes raffles. \textbf{(2) v1.2 – Tokenisation \& Marketplace:} Goal is to introduce tradeable raffle tickets. Add SNIP-20 "RAFFLE" Ticket Tokens so we can mint tradable tickets. This would enable a secondary market for transfers and on chain proof of ownership. We would adopt a multi contract architecture to separate ticket and raffle logic into their own contracts. The raffle contract could read balances via cross contract queries. The impact is to allow for greater user freedoms through ticket trading, gas efficiency and greater separation of concerns for maintenance.
+\textbf{(1) v1.1 – Security \& Reliability:} Goal of this upgrade is to enhance raffle fairness and security. The upgrade further enhances trust for larger raffles. Replace the demo modulo selection with Secret Network's VRF Randomness API to stop modulo bias and proposer grinding risk. Overall it will ensure cryptographically secure, unbiased winner selection increasing trust in the secret raffle system and promote greater stakes raffles. \textbf{(2) v1.2 – Tokenisation \& Marketplace:} Goal is to introduce tradeable raffle tickets. This would increase user engagement and utility of the raffle. Add SNIP-20 "RAFFLE" Ticket Tokens so we can mint tradable tickets. This would enable a secondary market for transfers and on chain proof of ownership. We would adopt a multi contract architecture to separate ticket and raffle logic into their own contracts. The raffle contract could read balances via cross contract queries. The impact is to allow for greater user freedoms through ticket trading, gas efficiency and greater separation of concerns for maintenance.
 
 % ---------------------------------------------------------------------------
 % References & Citations
 % ---------------------------------------------------------------------------
-\section{References \& Citations}
+{\small
 \begin{thebibliography}{9}
 
 \bibitem{PoolTogether}
@@ -88,7 +88,10 @@ PoolTogether. ``A no-loss lottery built on Ethereum.'' Available: \url{https://w
 
 \bibitem{PancakeSwap}
 PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswap.finance/products/lottery}
-\end{thebibliography}
+
+\bibitem{Lucky45}
+Lucky45 Protocol. ``Lucky45 Protocol Documentation.'' Available: \url{https://lucky45protocol.gitbook.io/lucky45protocol}
+\end{thebibliography}}
 
 \newpage
 
@@ -97,6 +100,9 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
 % ---------------------------------------------------------------------------
 \section{Appendix}
 
+% ---------------------------------------------------------------------------
+% Architecture & Contract Design, frontend contract interaction architecture structure diagram
+% ---------------------------------------------------------------------------
 \subsection{Frontend Contract Interaction Architecture Structure Diagram}
 \begin{figure}[h]
   \vspace{-0.5cm}
@@ -108,6 +114,9 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
 
 \newpage
 
+% ---------------------------------------------------------------------------
+% Frontend Workflow & UX, frontend & UX workflow diagram
+% ---------------------------------------------------------------------------
 \subsection{Frontend \& UX Workflow Diagram}
 \begin{figure}[h]
   \vspace{0cm}
@@ -119,6 +128,9 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
 
 \newpage
 
+% ---------------------------------------------------------------------------
+% Architecture & Contract Design
+% ---------------------------------------------------------------------------
 % ExecuteMsg Schema table
 \begin{table}[h]
   \centering
@@ -221,75 +233,4 @@ PancakeSwap. ``Lottery.'' Documentation. Available: \url{https://docs.pancakeswa
     \bottomrule
   \end{tabularx}
 \end{table}
-
-\newpage
-
-% \subsection{dApp Contract, Uploader, and Frontend Interaction Architecture Structure Diagram}
-% \begin{figure}[h]
-%   \vspace{-0.5cm}
-%   \hspace{-3cm}
-%   \includegraphics[width=1.4\textwidth]{Secret Raffle Monorepo Structure Diagram.png}
-%   \caption{dApp Contract, Uploader, and Frontend Architecture Interaction Structure Diagram.}
-%   \label{fig:dApp Contract, Uploader, and Frontend Architecture Interaction Structure Diagram Appendix}
-% \end{figure}
-
-% \subsection{dApp Contract, Uploader, and Frontend Architecture Structure Diagram}
-% \begin{figure}[h]
-%   \vspace{0cm}
-%   \hspace{-3cm}
-%   \includegraphics[width=1.4\textwidth]{Secret Raffle Monorepo Structure Diagram v2.png}
-%   \caption{dApp Contract, Uploader, and Frontend Architecture Structure Diagram.}
-%   \label{fig:dApp Contract, Uploader, and Frontend Architecture Structure Diagram Appendix}
-% \end{figure}
-
-% \newpage
-
-% \subsection{Contract Architecture Structure Diagram}
-% \begin{figure}[h]
-%   \vspace{0cm}
-%   \hspace{-3cm}
-%   \includegraphics[width=1.4\textwidth]{Secret Raffle Monorepo Contract Structure Diagram.png}
-%   \caption{Contract Architecture Structure Diagram.}
-%   \label{fig:Contract Architecture Structure Diagram Appendix}
-% \end{figure}
-
-% \subsection{Uploader Architecture Structure Diagram}
-% \begin{figure}[h]
-%   \vspace{0cm}
-%   \hspace{-3cm}
-%   \includegraphics[width=1.4\textwidth]{Secret Raffle Monorepo Uploader Structure Diagram.png}
-%   \caption{Uploader Architecture Structure Diagram.}
-%   \label{fig:Uploader Architecture Structure Diagram Appendix}
-% \end{figure}
-
-% \newpage
-
-% \subsection{Frontend Architecture Structure Diagram}
-% \begin{figure}[h]
-%   \vspace{0cm}
-%   \hspace{-3cm}
-%   \includegraphics[width=1.4\textwidth]{Secret Raffle Monorepo Frontend Structure Diagram.png}
-%   \caption{Frontend Architecture Structure Diagram.}
-%   \label{fig:Frontend Architecture Structure Diagram Appendix}
-% \end{figure}
-
-% \begin{table}[h]
-%   \centering
-%   \caption{State Layout}
-%   \begin{tabular}{@{}lll@{}}
-%     \toprule
-%     \textbf{Key} & \textbf{Type} & \textbf{Purpose} \\
-%     \midrule
-%     \texttt{ADMIN} & \texttt{Item<CanonicalAddr>} & Contract admin \\
-%     \texttt{RAFFLE} & \texttt{Item<Raffle>} & Config: end time, price, secret \\
-%     \texttt{TICKETS} & \texttt{Keymap<CanonicalAddr,u64>} & User ticket balances \\
-%     \texttt{TOTAL\_TICKETS} & \texttt{Item<u64>} & Total tickets sold \\
-%     \texttt{WINNER} & \texttt{Item<Option<CanonicalAddr>>} & Selected winner \\
-%     \texttt{RAFFLE\_STARTED} & \texttt{Item<bool>} & Raffle status \\
-%     \texttt{WINNER\_SELECTED} & \texttt{Item<bool>} & Winner selection status \\
-%     \texttt{PRIZE\_CLAIMED} & \texttt{Item<bool>} & Prize claim status \\
-%     \bottomrule
-%   \end{tabular}
-% \end{table}
-
 \end{document}
