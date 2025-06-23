@@ -5,7 +5,7 @@
 ---
 
 ## 1  Overview
-Secret Raffle is a proof of concept decentralised application built for the Cosmos ecosystem using CosmWasm smart contracts and Secret Network privacy features. It allows an **admin** to create a time boxed raffle, sell on-chain tickets for uSCRT, and randomly select a winner who can claim the accumulated pot alongside a _secret phrase_ that only the winner can view (via permit authenticated query).
+Secret Raffle is a proof of concept decentralised application built for the Cosmos ecosystem using CosmWasm smart contracts and Secret Network privacy features. It allows an **admin** to create a time boxed raffle, sell on-chain tickets for uSCRT, and randomly select a winner who can claim the accumulated pot alongside a _secret phrase_ that only the winner can view (via permit authenticated query). [Link to project recordings](https://drive.google.com/drive/folders/1l3dRC8Xoe5sIWdJNtHJkqTVCakvrLaIG?usp=drive_link)
 
 ---
 
